@@ -1,40 +1,62 @@
-# pgmm_decrypt
+# PGMMV_Decrypter
 
-Pixel Game Maker MV Decrypt
+Pixel Game Maker MV Decrypter
+
+## Install
+
+```sh
+# Standard Version
+pip install git+https://github.com/blluv/pgmm_decrypt.git
+
+# Fast Version
+pip install git+https://github.com/wqhanginge/PGMMV_Decrypter.git@fast
+```
+
+## Usage
 
 ```py
-# pip install git+https://github.com/blluv/pgmm_decrypt.git
-
-from pgmm_decrypt import decrypt_pgmm_key, decrypt_pgmm_resource
+from pgmmvdec import decrypt_key, decrypt_resource_bytes, decrypt_resource_file
 
 
 # signature
 
-decrypt_pgmm_key(encrypted_key: bytes) -> bytes
-decrypt_pgmm_resource(file_bytes: bytes, decrypted_key: bytes | None = None, *, weak: bool = False) -> bytes
+decrypt_key(encrypted_key: bytes | bytearray) -> bytes
+decrypt_resource_bytes(file_bytes: bytes | bytearray, key: bytes | bytearray) -> bytes
+decrypt_resource_file(file: str, out: str, key: bytes | bytearray) -> int
 
 
 # decrypt key (in info.json)
 
-with open("info.json", "r", encoding="utf-8") as f:
+with open('info.json', 'r', encoding='utf-8') as f:
     import base64, json
-    encrypted_key = base64.b64decode(json.load(f)["key"])
-decrypted_key = decrypt_pgmm_key(encrypted_key)
+    encrypted_key = base64.b64decode(json.load(f)['key'])
+decrypted_key = decrypt_key(encrypted_key)
 
 
-# decrypt resource (if key is None, an empty key is used by default; if weak, key is ignored)
+# decrypt resource
 
-with open("encrypted_resource_file", "rb") as f:
-    file_bytes = f.read()
-decrypted_bytes = decrypt_pgmm_resource(file_bytes, decrypted_key, weak=False)
-with open("decrypted_resource_file", "wb") as f:
-    f.write(decrypted_bytes)
+with open('encrypted_resource_file', 'rb') as encf, open('decrypted_resource_file', 'wb') as decf:
+    file_bytes = encf.read()
+    decrypted_bytes = decrypt_resource_bytes(file_bytes, decrypted_key)
+    decf.write(decrypted_bytes)
+
+decrypt_resource_file('encrypted_resource_file', 'decrypted_resource_file', decrypted_key)
 ```
 
-## weak?
+## Command Line Script
 
-In PGMM, if you try to use a key that is less than the key size of twofish, the key schedule will not work properly.
+```sh
+pgmmvdec [-o OUTPUT] [-q] [-k KEY | -x KEY] input
 
-I'm going to implement a way to check the length in the library and check weak automatically.
+# decrypt one resource file with the key detected from directory
+pgmmvdec encrypted.png -o decrypted.png
 
-Increasing the key length in info.json and debugging it to see if it decrypt correctly, to figure out what length PGMM's weird key schedule works at.
+# decrypt resource directory with a custom key
+pgmmvdec -k "Resource Key" ./Resources/img/
+
+# retrieve the key without resource decryption
+pgmmvdec -q ./Resources/
+```
+
+## Twofish
+Source code from [twofish](https://packages.debian.org/source/buster/twofish).
