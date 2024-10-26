@@ -70,7 +70,7 @@ def main() -> None:
             raise RuntimeError('cannot find PGMMV key')
     key = key.rstrip(b'\0')
 
-    print(f'Resource key: {key.hex()} "{key.decode('utf-8', 'backslashreplace')}"')
+    print(f'Resource key: {key.hex()} "{key.decode("utf-8", "backslashreplace")}"')
     if not args.query:
         print('Processing...')
         decrypt_iter_path(args.input, args.out, key)
