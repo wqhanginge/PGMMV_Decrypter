@@ -20,8 +20,7 @@ def make_iter(inbytes: bytes | bytearray | BufferedReader, block_size: int = 16)
             yield inbytes[offset : offset + block_size]
 
     elif isinstance(inbytes, BufferedReader):
-        for block in iter(lambda: inbytes.read(block_size), b''):
-            yield block
+        yield from iter(lambda: inbytes.read(block_size), b'')
 
     else:
         raise TypeError(f'invalid inbytes type: {type(inbytes)}')
