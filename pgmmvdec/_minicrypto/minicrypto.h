@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 
 #define PYNAME_CONCAT(m,c)          m "." c
