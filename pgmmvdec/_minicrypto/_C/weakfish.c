@@ -124,8 +124,8 @@
  * a separate extern statement for your fatal function.
  */
 //#define Weakfish_fatal( msg )       {for(;;);}
-#include "fatal.h"
 #define Weakfish_fatal( msg )       { cipher_fatal(msg); }
+void cipher_fatal(const char* msg);
 
 
 /*

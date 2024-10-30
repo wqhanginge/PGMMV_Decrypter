@@ -5,10 +5,12 @@
 /* initialization functions */
 
 int cipher_iter_type_ready() {
-    PyCBCIterType.tp_base = &PyCipherIterType;
+    PyCBCEncIterType.tp_base = &PyCipherIterType;
+    PyCBCDecIterType.tp_base = &PyCipherIterType;
 
     if (PyType_Ready(&PyCipherIterType) < 0) return -1;
-    if (PyType_Ready(&PyCBCIterType) < 0) return -1;
+    if (PyType_Ready(&PyCBCEncIterType) < 0) return -1;
+    if (PyType_Ready(&PyCBCDecIterType) < 0) return -1;
     return 0;
 }
 
@@ -17,51 +19,24 @@ int cipher_iter_type_ready() {
 
 /* internal operations of base class CipherIter */
 
-static void _CipherIter_override(PyCipherIterObject* self, cipheriterproc iter_proc) {
-    self->iter_proc = iter_proc;
-    self->input_iter = NULL;
+static void _CipherIter_override(PyCipherIterObject* self, cipheriterproc crypto) {
+    self->crypto = crypto;
 }
 
-static int _CipherIter_init(PyCipherIterObject* self, PyObject* input_iterable) {
-    PyObject* iter = PyObject_GetIter(input_iterable);
-    if (!iter) return -1;
-    Py_XSETREF(self->input_iter, iter);
-    return 0;
-}
-
-static void _CipherIter_clear(PyCipherIterObject* self) {
-    Py_CLEAR(self->input_iter);
-}
-
-static PyObject* _PyCipherIter_iterproc(PyCipherIterObject* self) {
-    PyObject* item = PyIter_Next(self->input_iter);
-    if (!item) {
-        if (!PyErr_Occurred()) PyErr_SetNone(PyExc_StopIteration);
+static PyObject* _PyCipherIter_iterproc(PyCipherIterObject* self, PyObject* input) {
+    uint8_t* block;
+    Py_ssize_t blen;
+    if (PyBytes_AsStringAndSize(input, &block, &blen) < 0) {
         return NULL;
     }
-
-    Py_buffer block;
-    if (PyObject_GetBuffer(item, &block, PyBUF_SIMPLE) < 0) {
-        Py_DECREF(item);
-        return NULL;
-    }
-    if (block.len != CIPHER_BLOCKSIZE) {
+    if (blen != CIPHER_BLOCKSIZE) {
         PyErr_SetString(PyExc_ValueError, "Illegal block size");
-        PyBuffer_Release(&block);
-        Py_DECREF(item);
         return NULL;
     }
-    Py_DECREF(item);
 
-    uint8_t buffer[2][CIPHER_BLOCKSIZE];
-    if (PyBuffer_ToContiguous(buffer[0], &block, CIPHER_BLOCKSIZE, 'C') < 0) {
-        PyBuffer_Release(&block);
-        return NULL;
-    }
-    PyBuffer_Release(&block);
-
-    self->iter_proc(self, buffer[1], buffer[0]);
-    return PyBytes_FromStringAndSize(buffer[1], CIPHER_BLOCKSIZE);
+    uint8_t output[CIPHER_BLOCKSIZE];
+    self->crypto(self, output, block);
+    return PyBytes_FromStringAndSize(output, CIPHER_BLOCKSIZE);
 }
 
 /* end internal operations of base class CipherIter */
@@ -74,8 +49,7 @@ static PyObject* PyCipherIter_new(PyTypeObject* Py_UNUSED(type), PyObject* Py_UN
 }
 
 static PyObject* PyCipherIter_iter(PyCipherIterObject* self) {
-    Py_INCREF(self);
-    return (PyObject*)self;
+    return Py_NewRef(self);
 }
 
 static PyObject* PyCipherIter_iternext(PyCipherIterObject* Py_UNUSED(self)) {
@@ -90,7 +64,7 @@ PyTypeObject PyCipherIterType = {
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCipherIterObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyCipherIter_new,
     .tp_iter = (getiterfunc)PyCipherIter_iter,
     .tp_iternext = (iternextfunc)PyCipherIter_iternext,
@@ -99,101 +73,127 @@ PyTypeObject PyCipherIterType = {
 /* end abstract base class CipherIter */
 
 
-/* class CBCIter */
+/* internal class CBCIter */
 
-struct _PyCBCIterObject {
+typedef struct _PyCBCIterObject {
     PyCipherIterObject base;
     PyCipherObject* cipher;
+    PyObject* input_iter;
     uint8_t last_ciphertext_block[CIPHER_BLOCKSIZE];
-};
+} _PyCBCIterObject;
 
 
-static void _CBCIter_encrypt(PyCBCIterObject* self, uint8_t dst[CIPHER_BLOCKSIZE], uint8_t src[CIPHER_BLOCKSIZE]) {
+static void _CBCIter_encrypt(_PyCBCIterObject* self, uint8_t dst[CIPHER_BLOCKSIZE], uint8_t src[CIPHER_BLOCKSIZE]) {
     minicrypto_xor_bytes(dst, src, self->last_ciphertext_block, CIPHER_BLOCKSIZE);
     self->cipher->encrypt(self->cipher, dst, dst);
     memcpy(self->last_ciphertext_block, dst, CIPHER_BLOCKSIZE);
 }
 
-static void _CBCIter_decrypt(PyCBCIterObject* self, uint8_t dst[CIPHER_BLOCKSIZE], uint8_t src[CIPHER_BLOCKSIZE]) {
+static void _CBCIter_decrypt(_PyCBCIterObject* self, uint8_t dst[CIPHER_BLOCKSIZE], uint8_t src[CIPHER_BLOCKSIZE]) {
     self->cipher->decrypt(self->cipher, dst, src);
     minicrypto_xor_bytes(dst, dst, self->last_ciphertext_block, CIPHER_BLOCKSIZE);
     memcpy(self->last_ciphertext_block, src, CIPHER_BLOCKSIZE);
 }
 
 
-static PyObject* PyCBCIter_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
-    static char* kwlist[] = { "cipher", "iv", "input_iterable", "is_decrypt", NULL };
-
-    PyObject* _ignored;
-    int is_decrypt = 0;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO$p", kwlist, &_ignored, &_ignored, &_ignored, &is_decrypt)) {
-        return NULL;
-    }
-
-    PyCBCIterObject* self = (PyCBCIterObject*)type->tp_alloc(type, 0);
+static PyObject* _PyCBCIter_new(PyTypeObject* type, cipheriterproc crypto) {
+    _PyCBCIterObject* self = (_PyCBCIterObject*)type->tp_alloc(type, 0);
     if (self) {
-        cipheriterproc cbciter_proc = (is_decrypt) ? (cipheriterproc)_CBCIter_decrypt : (cipheriterproc)_CBCIter_encrypt;
-        _CipherIter_override((PyCipherIterObject*)self, cbciter_proc);
+        _CipherIter_override((PyCipherIterObject*)self, crypto);
         self->cipher = NULL;
+        self->input_iter = NULL;
         memset(self->last_ciphertext_block, 0, CIPHER_BLOCKSIZE);
     }
     return (PyObject*)self;
 }
 
-static void PyCBCIter_dealloc(PyCBCIterObject* self) {
-    _CipherIter_clear((PyCipherIterObject*)self);
+static void _PyCBCIter_dealloc(_PyCBCIterObject* self) {
     Py_CLEAR(self->cipher);
+    Py_CLEAR(self->input_iter);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-static int PyCBCIter_init(PyCBCIterObject* self, PyObject* args, PyObject* kwds, int is_decrypt) {
-    static char* kwlist[] = { "cipher", "iv", "input_iterable", "is_decrypt", NULL};
+static int _PyCBCIter_init(_PyCBCIterObject* self, PyObject* args, PyObject* kwds) {
+    static char* kwlist[] = { "cipher", "iv", "input_iterable", NULL };
 
-    Py_buffer iv;
-    PyObject* cipher, * input_iterable, * _ignored = NULL;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Oy*O$O", kwlist, &cipher, &iv, &input_iterable, &_ignored)) {
+    uint8_t* iv;
+    Py_ssize_t ilen;
+    PyObject* cipher, * input_iterable;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!y#O", kwlist, &PyCipherType, &cipher, &iv, &ilen, &input_iterable)) {
         return -1;
     }
-    if (!PyObject_TypeCheck(cipher, &PyCipherType)) {
-        PyBuffer_Release(&iv);
-        return -1;
-    }
-    if (iv.len != CIPHER_BLOCKSIZE) {
+    if (ilen != CIPHER_BLOCKSIZE) {
         PyErr_SetString(PyExc_ValueError, "Illegal IV length");
-        PyBuffer_Release(&iv);
         return -1;
     }
 
-    if (_CipherIter_init((PyCipherIterObject*)self, input_iterable) < 0) {
-        PyBuffer_Release(&iv);
+    PyObject* input_iter = PyObject_GetIter(input_iterable);
+    if (!input_iter) {
         return -1;
     }
-    if (PyBuffer_ToContiguous(self->last_ciphertext_block, &iv, CIPHER_BLOCKSIZE, 'C') < 0) {
-        memset(self->last_ciphertext_block, 0, CIPHER_BLOCKSIZE);
-        PyBuffer_Release(&iv);
-        return -1;
-    }
-    PyBuffer_Release(&iv);
+
     Py_XSETREF(self->cipher, Py_NewRef(cipher));
+    Py_XSETREF(self->input_iter, input_iter);
+    memcpy(self->last_ciphertext_block, iv, CIPHER_BLOCKSIZE);
     return 0;
 }
 
-static PyObject* PyCBCIter_iternext(PyCBCIterObject* self) {
-    return _PyCipherIter_iterproc((PyCipherIterObject*)self);
+static PyObject* _PyCBCIter_iternext(_PyCBCIterObject* self) {
+    PyObject* item = PyIter_Next(self->input_iter);
+    if (!item) {
+        if (!PyErr_Occurred()) PyErr_SetNone(PyExc_StopIteration);
+        return NULL;
+    }
+
+    PyObject* result = _PyCipherIter_iterproc((PyCipherIterObject*)self, item);
+    Py_DECREF(item);
+    return result;
+}
+
+/* end internal class CBCIter */
+
+
+/* class CBCEncIter */
+
+static PyObject* PyCBCEncIter_new(PyTypeObject* type, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwds)) {
+    return _PyCBCIter_new(type, (cipheriterproc)_CBCIter_encrypt);
 }
 
 
-PyTypeObject PyCBCIterType = {
+PyTypeObject PyCBCEncIterType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CBCITER),
+    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CBCENCITER),
     .tp_doc = NULL,
-    .tp_basicsize = sizeof(PyCBCIterObject),
+    .tp_basicsize = sizeof(PyCBCEncIterObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = PyCBCIter_new,
-    .tp_dealloc = (destructor)PyCBCIter_dealloc,
-    .tp_init = (initproc)PyCBCIter_init,
-    .tp_iternext = (iternextfunc)PyCBCIter_iternext,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyCBCEncIter_new,
+    .tp_dealloc = (destructor)_PyCBCIter_dealloc,
+    .tp_init = (initproc)_PyCBCIter_init,
+    .tp_iternext = (iternextfunc)_PyCBCIter_iternext,
 };
 
-/* end class CBCIter */
+/* end class CBCEncIter */
+
+
+/* class CBCDecIter */
+
+static PyObject* PyCBCDecIter_new(PyTypeObject* type, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwds)) {
+    return _PyCBCIter_new(type, (cipheriterproc)_CBCIter_decrypt);
+}
+
+
+PyTypeObject PyCBCDecIterType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CBCDECITER),
+    .tp_doc = NULL,
+    .tp_basicsize = sizeof(PyCBCDecIterObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyCBCDecIter_new,
+    .tp_dealloc = (destructor)_PyCBCIter_dealloc,
+    .tp_init = (initproc)_PyCBCIter_init,
+    .tp_iternext = (iternextfunc)_PyCBCIter_iternext,
+};
+
+/* end class CBCDecIter */

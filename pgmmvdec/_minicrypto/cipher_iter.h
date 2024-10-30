@@ -24,8 +24,7 @@ typedef void (*cipheriterproc)(PyCipherIterObject* self, uint8_t dst[CIPHER_BLOC
 
 struct _PyCipherIterObject {
     PyObject_HEAD
-    cipheriterproc iter_proc;
-    PyObject* input_iter;
+    cipheriterproc crypto;
 };
 
 extern PyTypeObject PyCipherIterType;
@@ -33,7 +32,11 @@ extern PyTypeObject PyCipherIterType;
 
 /* available iters of block cipher modes of operation */
 
-#define CLASSNAME_CBCITER   "CBCIter"
+#define CLASSNAME_CBCENCITER    "CBCEncIter"
+#define CLASSNAME_CBCDECITER    "CBCDecIter"
 
-typedef struct _PyCBCIterObject PyCBCIterObject;
-extern PyTypeObject PyCBCIterType;
+typedef struct _PyCBCIterObject PyCBCEncIterObject;
+extern PyTypeObject PyCBCEncIterType;
+
+typedef struct _PyCBCIterObject PyCBCDecIterObject;
+extern PyTypeObject PyCBCDecIterType;

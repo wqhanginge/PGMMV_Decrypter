@@ -7,6 +7,11 @@
 #define CIPHER_BLOCKSIZE    16      /* MUST NOT change this */
 
 
+/* general fatal function, no return */
+
+void cipher_fatal(const char* msg);
+
+
 /* initialization funcrions */
 
 /*
@@ -40,8 +45,12 @@ extern PyTypeObject PyCipherType;
 
 /* available ciphers */
 
+#define CLASSNAME_IDENTITY  "Identity"
 #define CLASSNAME_TWOFISH   "Twofish"
 #define CLASSNAME_WEAKFISH  "Weakfish"
+
+typedef struct _PyIdentityObject PyIdentityObject;
+extern PyTypeObject PyIdentityType;
 
 typedef struct _PyTwofishObject PyTwofishObject;
 extern PyTypeObject PyTwofishType;

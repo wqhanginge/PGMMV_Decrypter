@@ -215,8 +215,8 @@
  * a separate extern statement for your fatal function.
  */
 //#define Twofish_fatal( msg )      {for(;;);}
-#include "fatal.h"
 #define Twofish_fatal( msg )      { cipher_fatal(msg); }
+void cipher_fatal(const char* msg);
 
 
 /*

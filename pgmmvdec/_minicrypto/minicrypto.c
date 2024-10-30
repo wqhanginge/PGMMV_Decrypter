@@ -23,49 +23,23 @@ void minicrypto_xor_bytes(uint8_t* ret, uint8_t* ba, uint8_t* bb, size_t len) {
 static PyObject* Py_minicrypto_xor_bytes(PyObject* self, PyObject* args, PyObject* kwds) {
     static char* kwlist[] = { "bytes1", "bytes2", "strict", NULL };
 
-    Py_buffer bytes1, bytes2;
+    uint8_t* bytes1, * bytes2;
+    Py_ssize_t blen1, blen2;
     int strict = 0;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y*y*|$p", kwlist, &bytes1, &bytes2, &strict)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y#y#|$p", kwlist, &bytes1, &blen1, &bytes2, &blen2, &strict)) {
         return NULL;
     }
-    if (strict && bytes1.len != bytes2.len) {
+    if (strict && blen1 != blen2) {
         PyErr_SetString(PyExc_ValueError, "Length not equal");
-        PyBuffer_Release(&bytes1);
-        PyBuffer_Release(&bytes2);
         return NULL;
     }
 
-    Py_buffer* psbytes = (bytes1.len < bytes2.len) ? &bytes1 : &bytes2;
-    Py_buffer* plbytes = (bytes1.len < bytes2.len) ? &bytes2 : &bytes1;
-    size_t slen = psbytes->len, llen = plbytes->len;
-
-    uint8_t* buffer = (uint8_t*)malloc(slen * 2 + llen);
-    if (!buffer) {
-        PyBuffer_Release(&bytes1);
-        PyBuffer_Release(&bytes2);
-        return PyErr_NoMemory();
+    size_t olen = (blen1 < blen2) ? blen1 : blen2;
+    PyObject* result = PyBytes_FromStringAndSize(NULL, olen);
+    if (result) {
+        uint8_t* output = PyBytes_AS_STRING(result);
+        minicrypto_xor_bytes(output, bytes1, bytes2, olen);
     }
-
-    uint8_t* sinput = buffer + slen, * linput = buffer + slen * 2;
-    if (PyBuffer_ToContiguous(sinput, psbytes, slen, 'C') < 0) {
-        PyBuffer_Release(&bytes1);
-        PyBuffer_Release(&bytes2);
-        free(buffer);
-        return NULL;
-    }
-    if (PyBuffer_ToContiguous(linput, plbytes, llen, 'C') < 0) {
-        PyBuffer_Release(&bytes1);
-        PyBuffer_Release(&bytes2);
-        free(buffer);
-        return NULL;
-    }
-    PyBuffer_Release(&bytes1);
-    PyBuffer_Release(&bytes2);
-
-    minicrypto_xor_bytes(buffer, sinput, linput, slen);
-
-    PyObject* result = PyBytes_FromStringAndSize(buffer, slen);
-    free(buffer);
     return result;
 }
 
@@ -94,10 +68,12 @@ typedef struct _PyTypeList {
 
 static PyTypeList typelist[] = {
     { CLASSNAME_CIPHER, &PyCipherType },
+    { CLASSNAME_IDENTITY, &PyIdentityType },
     { CLASSNAME_TWOFISH, &PyTwofishType },
     { CLASSNAME_WEAKFISH, &PyWeakfishType },
     { CLASSNAME_CIPHERITER, &PyCipherIterType },
-    { CLASSNAME_CBCITER, &PyCBCIterType },
+    { CLASSNAME_CBCENCITER, &PyCBCEncIterType },
+    { CLASSNAME_CBCDECITER, &PyCBCDecIterType },
     { CLASSNAME_CIPHERMODE, &PyCipherModeType },
     { CLASSNAME_CBC, &PyCBCType },
     { NULL }

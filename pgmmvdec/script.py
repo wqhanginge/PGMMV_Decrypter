@@ -8,6 +8,8 @@ PGMMV_INFO_PATHS = (
     Path('data', 'info.json'),
 )
 PGMMV_KEY_DICTKEY = 'key'
+DECRYPTED_SUFFIX = '-decrypted'
+
 
 parser = ArgumentParser(description='Pixel Game Maker MV Decrypter')
 parser.add_argument('input', type=Path, help='PGMMV resource file or directory')
@@ -31,7 +33,7 @@ def find_key(cwd: Path) -> bytes | None:
     return None
 
 
-def decrypt_iter_path(src: Path, dst: Path, key: bytes | bytearray) -> None:
+def decrypt_iter_path(src: Path, dst: Path, key: bytes) -> None:
     from collections import deque
 
     tasks = deque(((src, dst),))
@@ -49,15 +51,16 @@ def main() -> None:
 
     args.input = args.input.resolve()
     if not args.input.exists():
-        raise ValueError(f'path not found: {args.input}')
+        raise ValueError(f'Path not found: {args.input}')
     elif args.input.samefile(args.input.parent):
-        raise ValueError(f'cannot use the root directory as input: {args.input}')
+        raise ValueError(f'Cannot use the root directory as input: {args.input}')
 
-    args.out = args.input.with_stem(args.input.stem + '-dec') if args.out is None else args.out.resolve()
+    args.out = args.input.with_stem(args.input.stem + DECRYPTED_SUFFIX) if args.out is None\
+        else args.out.resolve()
     if args.input.is_file() and args.out == args.input:
-        raise ValueError(f'output cannot be the same as input: {args.out}')
+        raise ValueError(f'Output cannot be the same as input: {args.out}')
     elif args.input.is_dir() and (args.out.is_relative_to(args.input) or args.input.is_relative_to(args.out)):
-        raise ValueError(f'output and input directories overlap: {args.out}, {args.input}')
+        raise ValueError(f'Output and input directories overlap: {args.out}, {args.input}')
 
     if args.key is not None:
         key = bytes(args.key, encoding='utf-8')
@@ -67,7 +70,7 @@ def main() -> None:
         cwd = args.input.parent if args.input.is_file() else args.input
         key = find_key(cwd)
         if key is None:
-            raise RuntimeError('cannot find PGMMV key')
+            raise RuntimeError('Cannot find PGMMV key')
     key = key.rstrip(b'\0')
 
     print(f'Resource key: {key.hex()} "{key.decode("utf-8", "backslashreplace")}"')

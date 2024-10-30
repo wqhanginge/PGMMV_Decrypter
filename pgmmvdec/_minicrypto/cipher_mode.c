@@ -22,42 +22,25 @@ static void _CipherMode_override(PyCipherModeObject* self, ciphermodeproc enc_pr
     self->decrypt = dec_proc;
 }
 
-static PyObject* _PyCipherMode_cryptoproc(PyCipherModeObject* self, PyObject* args, PyObject* kwds, int is_decrypt) {
+static PyObject* _PyCipherMode_cryptoproc(PyCipherModeObject* self, PyObject* args, PyObject* kwds, ciphermodeproc proc) {
     static char* kwlist[] = { "cipher", "data", NULL };
 
+    uint8_t* data;
+    Py_ssize_t dlen;
     PyObject* cipher;
-    Py_buffer data;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Oy*", kwlist, &cipher, &data)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!y#", kwlist, &PyCipherType, &cipher, &data, &dlen)) {
         return NULL;
     }
-    if (!PyObject_TypeCheck(cipher, &PyCipherType)) {
-        PyBuffer_Release(&data);
-        return NULL;
-    }
-    if (data.len % CIPHER_BLOCKSIZE) {
+    if (dlen % CIPHER_BLOCKSIZE) {
         PyErr_Format(PyExc_ValueError, "Length of data must be divisible by %d", CIPHER_BLOCKSIZE);
-        PyBuffer_Release(&data);
         return NULL;
     }
 
-    size_t len = data.len;
-    uint8_t* buffer = (uint8_t*)malloc(len * 2);
-    if (!buffer) {
-        PyBuffer_Release(&data);
-        return PyErr_NoMemory();
+    PyObject* result = PyBytes_FromStringAndSize(NULL, dlen);
+    if (result) {
+        uint8_t* output = PyBytes_AS_STRING(result);
+        proc(self, (PyCipherObject*)cipher, output, data, dlen);
     }
-    if (PyBuffer_ToContiguous(buffer, &data, len, 'C') < 0) {
-        PyBuffer_Release(&data);
-        free(buffer);
-        return NULL;
-    }
-    PyBuffer_Release(&data);
-
-    ciphermodeproc proc = (is_decrypt) ? self->decrypt : self->encrypt;
-    proc(self, (PyCipherObject*)cipher, buffer + len, buffer, len);
-
-    PyObject* result = PyBytes_FromStringAndSize(buffer + len, len);
-    free(buffer);
     return result;
 }
 
@@ -94,7 +77,7 @@ PyTypeObject PyCipherModeType = {
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCipherModeObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyCipherMode_new,
     .tp_methods = PyCipherMode_methods,
 };
@@ -141,22 +124,17 @@ static PyObject* PyCBC_new(PyTypeObject* type, PyObject* Py_UNUSED(args), PyObje
 static int PyCBC_init(PyCBCObject* self, PyObject* args, PyObject* kwds) {
     static char* kwlist[] = { "iv", NULL };
 
-    Py_buffer iv;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y*", kwlist, &iv)) {
+    uint8_t* iv;
+    Py_ssize_t ilen;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y#", kwlist, &iv, &ilen)) {
         return -1;
     }
-    if (iv.len != CIPHER_BLOCKSIZE) {
+    if (ilen != CIPHER_BLOCKSIZE) {
         PyErr_SetString(PyExc_ValueError, "Illegal IV length");
-        PyBuffer_Release(&iv);
         return -1;
     }
 
-    if (PyBuffer_ToContiguous(self->iv, &iv, CIPHER_BLOCKSIZE, 'C') < 0) {
-        memset(self->iv, 0, CIPHER_BLOCKSIZE);
-        PyBuffer_Release(&iv);
-        return -1;
-    }
-    PyBuffer_Release(&iv);
+    memcpy(self->iv, iv, CIPHER_BLOCKSIZE);
     return 0;
 }
 
@@ -166,11 +144,11 @@ static PyObject* PyCBC_iv(PyCBCObject* self, PyObject* Py_UNUSED(args)) {
 }
 
 static PyObject* PyCBC_encrypt(PyCBCObject* self, PyObject* args, PyObject* kwds) {
-    return _PyCipherMode_cryptoproc((PyCipherModeObject*)self, args, kwds, 0);
+    return _PyCipherMode_cryptoproc((PyCipherModeObject*)self, args, kwds, (ciphermodeproc)_CBC_encrypt);
 }
 
 static PyObject* PyCBC_decrypt(PyCBCObject* self, PyObject* args, PyObject* kwds) {
-    return _PyCipherMode_cryptoproc((PyCipherModeObject*)self, args, kwds, 1);
+    return _PyCipherMode_cryptoproc((PyCipherModeObject*)self, args, kwds, (ciphermodeproc)_CBC_decrypt);
 }
 
 static PyMethodDef PyCBC_methods[] = {
@@ -187,7 +165,7 @@ PyTypeObject PyCBCType = {
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCBCObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyCBC_new,
     .tp_init = (initproc)PyCBC_init,
     .tp_methods = PyCBC_methods,

@@ -8,13 +8,24 @@
 #define TWOFISH_MAXKEYLEN   32
 
 
+/* general fatal function */
+
+void cipher_fatal(const char* msg) {
+    Py_FatalError(msg);
+}
+
+/* end general fatal function */
+
+
 /* initialization functions */
 
 int cipher_type_ready() {
+    PyIdentityType.tp_base = &PyCipherType;
     PyTwofishType.tp_base = &PyCipherType;
     PyWeakfishType.tp_base = &PyCipherType;
 
     if (PyType_Ready(&PyCipherType) < 0) return -1;
+    if (PyType_Ready(&PyIdentityType) < 0) return -1;
     if (PyType_Ready(&PyTwofishType) < 0) return -1;
     if (PyType_Ready(&PyWeakfishType) < 0) return -1;
     return 0;
@@ -35,29 +46,22 @@ static void _Cipher_override(PyCipherObject* self, cipherproc enc_proc, cipherpr
     self->decrypt = dec_proc;
 }
 
-static PyObject* _PyCipher_cryptoproc(PyCipherObject* self, PyObject* args, PyObject* kwds, int is_decrypt) {
+static PyObject* _PyCipher_cryptoproc(PyCipherObject* self, PyObject* args, PyObject* kwds, cipherproc proc) {
     static char* kwlist[] = { "block", NULL };
 
-    Py_buffer block;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y*", kwlist, &block)) {
+    uint8_t* block;
+    Py_ssize_t blen;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y#", kwlist, &block, &blen)) {
         return NULL;
     }
-    if (block.len != CIPHER_BLOCKSIZE) {
+    if (blen != CIPHER_BLOCKSIZE) {
         PyErr_SetString(PyExc_ValueError, "Illegal block size");
-        PyBuffer_Release(&block);
         return NULL;
     }
 
-    uint8_t buffer[2][CIPHER_BLOCKSIZE];
-    if (PyBuffer_ToContiguous(buffer[0], &block, CIPHER_BLOCKSIZE, 'C') < 0) {
-        PyBuffer_Release(&block);
-        return NULL;
-    }
-    PyBuffer_Release(&block);
-
-    cipherproc proc = (is_decrypt) ? self->decrypt : self->encrypt;
-    proc(self, buffer[1], buffer[0]);
-    return PyBytes_FromStringAndSize(buffer[1], CIPHER_BLOCKSIZE);
+    uint8_t output[CIPHER_BLOCKSIZE];
+    proc(self, output, block);
+    return PyBytes_FromStringAndSize(output, CIPHER_BLOCKSIZE);
 }
 
 /* end internal operations of base class Cipher */
@@ -93,12 +97,72 @@ PyTypeObject PyCipherType = {
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCipherObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyCipher_new,
     .tp_methods = PyCipher_methods,
 };
 
 /* end abstract base class Cipher */
+
+
+/* class Identity */
+
+struct _PyIdentityObject {
+    PyCipherObject base;
+};
+
+
+static void _Identity_crypto(PyIdentityObject* Py_UNUSED(self), uint8_t dst[CIPHER_BLOCKSIZE], uint8_t src[CIPHER_BLOCKSIZE]) {
+    memcpy(dst, src, CIPHER_BLOCKSIZE);
+}
+
+
+static PyObject* PyIdentity_new(PyTypeObject* type, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwds)) {
+    PyIdentityObject* self = (PyIdentityObject*)type->tp_alloc(type, 0);
+    if (self) {
+        _Cipher_override((PyCipherObject*)self, (cipherproc)_Identity_crypto, (cipherproc)_Identity_crypto);
+    }
+    return (PyObject*)self;
+}
+
+static int PyIdentity_init(PyIdentityObject* Py_UNUSED(self), PyObject* args, PyObject* kwds) {
+    static char* kwlist[] = { NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "", kwlist)) {
+        return -1;
+    }
+    return 0;
+}
+
+
+static PyObject* PyIdentity_encrypt(PyIdentityObject* self, PyObject* args, PyObject* kwds) {
+    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, (cipherproc)_Identity_crypto);
+}
+
+static PyObject* PyIdentity_decrypt(PyIdentityObject* self, PyObject* args, PyObject* kwds) {
+    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, (cipherproc)_Identity_crypto);
+}
+
+static PyMethodDef PyIdentity_methods[] = {
+    { "encrypt", (PyCFunction)PyIdentity_encrypt, METH_VARARGS | METH_KEYWORDS, NULL },
+    { "decrypt", (PyCFunction)PyIdentity_decrypt, METH_VARARGS | METH_KEYWORDS, NULL },
+    { NULL }
+};
+
+
+PyTypeObject PyIdentityType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_IDENTITY),
+    .tp_doc = NULL,
+    .tp_basicsize = sizeof(PyIdentityObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyIdentity_new,
+    .tp_init = (initproc)PyIdentity_init,
+    .tp_methods = PyIdentity_methods,
+};
+
+/* end class Identity */
 
 
 /* class Twofish */
@@ -134,24 +198,19 @@ static PyObject* PyTwofish_new(PyTypeObject* type, PyObject* Py_UNUSED(args), Py
 static int PyTwofish_init(PyTwofishObject* self, PyObject* args, PyObject* kwds) {
     static char* kwlist[] = { "key", NULL };
 
-    Py_buffer key;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y*", kwlist, &key)) {
+    uint8_t* key;
+    Py_ssize_t klen;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "y#", kwlist, &key, &klen)) {
         return -1;
     }
-    if (key.len < TWOFISH_MINKEYLEN || key.len > TWOFISH_MAXKEYLEN) {
+    if (klen < TWOFISH_MINKEYLEN || klen > TWOFISH_MAXKEYLEN) {
         PyErr_SetString(PyExc_ValueError, "Illegal key length");
-        PyBuffer_Release(&key);
         return -1;
     }
 
-    if (PyBuffer_ToContiguous(self->key, &key, key.len, 'C') < 0) {
-        memset(self->key, 0, sizeof(self->key_len));
-        PyBuffer_Release(&key);
-        return -1;
-    }
-    self->key_len = key.len;
+    self->key_len = klen;
+    memcpy(self->key, key, klen);
     Twofish_prepare_key(self->key, (int)self->key_len, &self->internal_key);
-    PyBuffer_Release(&key);
     return 0;
 }
 
@@ -161,11 +220,11 @@ static PyObject* PyTwofish_key(PyTwofishObject* self, PyObject* Py_UNUSED(args))
 }
 
 static PyObject* PyTwofish_encrypt(PyTwofishObject* self, PyObject* args, PyObject* kwds) {
-    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, 0);
+    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, (cipherproc)_Twofish_encrypt);
 }
 
 static PyObject* PyTwofish_decrypt(PyTwofishObject* self, PyObject* args, PyObject* kwds) {
-    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, 1);
+    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, (cipherproc)_Twofish_decrypt);
 }
 
 static PyMethodDef PyTwofish_methods[] = {
@@ -182,7 +241,7 @@ PyTypeObject PyTwofishType = {
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyTwofishObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyTwofish_new,
     .tp_init = (initproc)PyTwofish_init,
     .tp_methods = PyTwofish_methods,
@@ -215,7 +274,7 @@ static PyObject* PyWeakfish_new(PyTypeObject* type, PyObject* Py_UNUSED(args), P
     return (PyObject*)self;
 }
 
-static int PyWeakfish_init(PyWeakfishObject* self, PyObject* args, PyObject* kwds) {
+static int PyWeakfish_init(PyWeakfishObject* Py_UNUSED(self), PyObject* args, PyObject* kwds) {
     static char* kwlist[] = { NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "", kwlist)) {
@@ -226,16 +285,16 @@ static int PyWeakfish_init(PyWeakfishObject* self, PyObject* args, PyObject* kwd
 
 
 static PyObject* PyWeakfish_encrypt(PyWeakfishObject* self, PyObject* args, PyObject* kwds) {
-    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, 0);
+    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, (cipherproc)_Weakfish_encrypt);
 }
 
 static PyObject* PyWeakfish_decrypt(PyWeakfishObject* self, PyObject* args, PyObject* kwds) {
-    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, 1);
+    return _PyCipher_cryptoproc((PyCipherObject*)self, args, kwds, (cipherproc)_Weakfish_decrypt);
 }
 
 static PyMethodDef PyWeakfish_methods[] = {
-    { "encrypt", (PyCFunction)PyWeakfish_encrypt, METH_VARARGS | METH_KEYWORDS, NULL},
-    { "decrypt", (PyCFunction)PyWeakfish_decrypt, METH_VARARGS | METH_KEYWORDS, NULL},
+    { "encrypt", (PyCFunction)PyWeakfish_encrypt, METH_VARARGS | METH_KEYWORDS, NULL },
+    { "decrypt", (PyCFunction)PyWeakfish_decrypt, METH_VARARGS | METH_KEYWORDS, NULL },
     { NULL }
 };
 
@@ -246,7 +305,7 @@ PyTypeObject PyWeakfishType = {
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyWeakfishObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyWeakfish_new,
     .tp_init = (initproc)PyWeakfish_init,
     .tp_methods = PyWeakfish_methods,

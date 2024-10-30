@@ -8,7 +8,6 @@ ext__minicrypto = Extension(
         src__minicrypto + 'cipher.c',
         src__minicrypto + 'cipher_iter.c',
         src__minicrypto + 'cipher_mode.c',
-        src__minicrypto + '_C/fatal.c',
         src__minicrypto + '_C/twofish.c',
         src__minicrypto + '_C/weakfish.c',
     ],
@@ -17,7 +16,7 @@ ext__minicrypto = Extension(
 
 setup(
     name='pgmmvdec',
-    version='0.1.2',
+    version='0.2.0',
     description='Pixel Game Maker MV Decrypter',
     author='blluv and Gee Wang',
     packages=find_packages(),
