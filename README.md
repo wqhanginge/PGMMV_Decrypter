@@ -20,9 +20,9 @@ from pgmmvdec import decrypt_key, decrypt_resource_bytes, decrypt_resource_file
 
 # signature
 
-decrypt_key(encrypted_key: bytes | bytearray) -> bytes
-decrypt_resource_bytes(file_bytes: bytes | bytearray, key: bytes | bytearray) -> bytes
-decrypt_resource_file(file: str, out: str, key: bytes | bytearray) -> int
+decrypt_key(encrypted_key: bytes) -> bytes
+decrypt_resource_bytes(file_bytes: bytes, key: bytes) -> bytes
+decrypt_resource_file(file: str, out: str, key: bytes) -> int
 
 
 # decrypt key (in info.json)
