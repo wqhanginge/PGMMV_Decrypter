@@ -5,11 +5,7 @@ Pixel Game Maker MV Decrypter
 ## Install
 
 ```sh
-# Standard Version
-pip install git+https://github.com/blluv/pgmm_decrypt.git
-
-# Fast Version
-pip install git+https://github.com/wqhanginge/PGMMV_Decrypter.git@fast
+pip install git+https://github.com/wqhanginge/PGMMV_Decrypter.git
 ```
 
 ## Usage
@@ -58,5 +54,8 @@ pgmmvdec -k "Resource Key" ./Resources/img/
 pgmmvdec -q ./Resources/
 ```
 
-## Twofish
-Source code from [twofish](https://packages.debian.org/source/buster/twofish).
+## Thanks
+
+This work is based on [**pgmm_decrypt**](https://github.com/blluv/pgmm_decrypt) by **blluv**.
+
+**Twofish** source code from [web](https://packages.debian.org/source/buster/twofish).

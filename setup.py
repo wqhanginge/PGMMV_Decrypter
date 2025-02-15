@@ -16,9 +16,9 @@ ext__minicrypto = Extension(
 
 setup(
     name='pgmmvdec',
-    version='0.2.0',
+    version='0.2.1',
     description='Pixel Game Maker MV Decrypter',
-    author='blluv and Gee Wang',
+    author='Gee Wang, blluv',
     packages=find_packages(),
     ext_modules=[ext__minicrypto],
     entry_points={'console_scripts': ['pgmmvdec = pgmmvdec.script:main']},
