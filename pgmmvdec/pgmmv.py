@@ -32,7 +32,7 @@ def decrypt_resource_file(file: str, out: str, key: bytes) -> int:
         # but requesting only 4 bytes should be ok
         meta = ifp.peek(4)
 
-        if meta[:3] != b'enc':   #resource file is not encrypted
+        if meta[:3] != b'enc':   # resource file is not encrypted
             pt_len = None
             pt_iter = make_iter(ifp)
         else:

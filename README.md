@@ -2,6 +2,8 @@
 
 Pixel Game Maker MV Decrypter
 
+A fast version of tool [**pgmm_decrypt**](https://github.com/blluv/pgmm_decrypt), delivering approximately 10x speedup and featuring a convenient command-line interface.
+
 ## Install
 
 ```sh
@@ -39,7 +41,7 @@ with open('encrypted_resource_file', 'rb') as encf, open('decrypted_resource_fil
 decrypt_resource_file('encrypted_resource_file', 'decrypted_resource_file', decrypted_key)
 ```
 
-## Command Line Script
+## Command-Line Interface
 
 ```sh
 pgmmvdec [-o OUTPUT] [-q] [-k KEY | -x KEY] input
@@ -58,4 +60,4 @@ pgmmvdec -q ./Resources/
 
 This work is based on [**pgmm_decrypt**](https://github.com/blluv/pgmm_decrypt) by **blluv**.
 
-**Twofish** source code from [web](https://packages.debian.org/source/buster/twofish).
+**Twofish** source code from [debian packages](https://packages.debian.org/source/buster/twofish).

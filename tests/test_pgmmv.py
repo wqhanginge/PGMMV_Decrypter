@@ -26,8 +26,8 @@ def test_decrypt_key():
     raw_key = loads(Path(SAMPLE_ROOT / 'info.json').read_bytes())['key']
     key = decrypt_key(b64decode(raw_key))
 
-    assert key == KEY, f'{decrypt_key.__name__}: Incorrect decrypted key'
-    print(f'{decrypt_key.__name__}: Passed')
+    assert key == KEY, 'decrypt_key: Incorrect decrypted key'
+    print('decrypt_key: Passed')
 
 
 def test_decrypt_resource_bytes():
@@ -35,8 +35,8 @@ def test_decrypt_resource_bytes():
         fbytes = decrypt_resource_bytes(Path(SAMPLE_ROOT / sample['name']).read_bytes(), KEY)
 
         assert sha256(fbytes).hexdigest() == sample['sha256'],\
-            f'{decrypt_resource_bytes.__name__}: Incorrect decrypted {sample["type"]}'
-        print(f'{decrypt_resource_bytes.__name__}: Sample {sample["type"]} passed')
+            f'decrypt_resource_bytes: Incorrect decrypted {sample["type"]}'
+        print(f'decrypt_resource_bytes: Sample {sample["type"]} passed')
 
 
 def test_decrypt_resource_file():
@@ -47,8 +47,8 @@ def test_decrypt_resource_file():
         decrypt_resource_file(SAMPLE_ROOT / sample['name'], SAMPLE_ROOT / TMP, KEY)
 
         assert sha256(Path(SAMPLE_ROOT / TMP).read_bytes()).hexdigest() == sample['sha256'],\
-            f'{decrypt_resource_file.__name__}: Incorrect decrypted {sample["type"]}'
-        print(f'{decrypt_resource_file.__name__}: Sample {sample["type"]} passed')
+            f'decrypt_resource_file: Incorrect decrypted {sample["type"]}'
+        print(f'decrypt_resource_file: Sample {sample["type"]} passed')
 
     remove(SAMPLE_ROOT / TMP)
 

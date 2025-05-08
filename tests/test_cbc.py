@@ -13,8 +13,8 @@ def test_Identity():
 
     for block in data:
         assert cipher.decrypt(block) == cipher.encrypt(block) == block,\
-            f'{Identity.__name__}: Incorrect cipher process'
-    print(f'{Identity.__name__}: Passed')
+            'Identity: Incorrect cipher process'
+    print('Identity: Passed')
 
 
 def test_CBC():
@@ -23,8 +23,8 @@ def test_CBC():
     data = b''.join(token_bytes(BLOCK_SIZE) for _ in range(BLOCK_COUNT))
     output = cbc.decrypt(cipher, cbc.encrypt(cipher, data))
 
-    assert output == data, f'{CBC.__name__}: Incorrect encrypted/decrypted data'
-    print(f'{CBC.__name__}: Passed')
+    assert output == data, 'CBC: Incorrect encrypted/decrypted data'
+    print('CBC: Passed')
 
 
 def test_CBCIter():
@@ -40,9 +40,8 @@ def test_CBCIter():
     for block in CBCDecIter(cipher, iv, CBCEncIter(cipher, iv, data_iter(inhash))):
         outhash.update(block)
 
-    assert outhash.digest() == inhash.digest(),\
-        f'{CBCEncIter.__name__}/{CBCDecIter.__name__}: Incorrect encrypted/decrypted data'
-    print(f'{CBCEncIter.__name__}/{CBCDecIter.__name__}: Passed')
+    assert outhash.digest() == inhash.digest(), 'CBCIter: Incorrect encrypted/decrypted data'
+    print('CBCIter: Passed')
 
 
 if __name__ == '__main__':

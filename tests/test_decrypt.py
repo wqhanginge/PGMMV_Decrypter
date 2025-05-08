@@ -17,15 +17,15 @@ SAMPLES = (
 def test_xor_bytes():
     for sample in SAMPLES:
         assert xor_bytes(sample['key'], sample['key']).strip(b'\0') == b'',\
-            f'{xor_bytes.__name__}: Incorrect output of "{sample["key"].hex()}"'
-        print(f'{xor_bytes.__name__}: Sample "{sample["key"].hex()}" passed')
+            f'xor_bytes: Incorrect output of "{sample["key"].hex()}"'
+        print(f'xor_bytes: Sample "{sample["key"].hex()}" passed')
 
 
 def test_derive_subkey():
     for sample in SAMPLES:
         assert derive_subkey(sample['key'], sample['int']) == sample['sub'],\
-            f'{derive_subkey.__name__}: Incorrect subkey of "{sample["key"].hex()}"'
-        print(f'{derive_subkey.__name__}: Sample "{sample["key"].hex()}" passed')
+            f'derive_subkey: Incorrect subkey of "{sample["key"].hex()}"'
+        print(f'derive_subkey: Sample "{sample["key"].hex()}" passed')
 
 
 if __name__ == '__main__':
