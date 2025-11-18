@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pgmmvdec"
+authors = [{name = "Gee Wang"}, {name = "blluv"}]
+description = "Pixel Game Maker MV Decrypter"
+license = "MIT"
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[project.scripts]
+pgmmvdec = "pgmmvdec.script:main"
+
+[tool.setuptools]
+packages = ["pgmmvdec"]
+
+[[tool.setuptools.ext-modules]]
+name = "pgmmvdec._minicrypto"
+sources = [
+    "csrc/minicrypto/minicrypto.c",
+    "csrc/minicrypto/cipher.c",
+    "csrc/minicrypto/cipher_iter.c",
+    "csrc/minicrypto/cipher_mode.c",
+    "csrc/minicrypto/cipher/twofish.c",
+    "csrc/minicrypto/cipher/weakfish.c"
+]
+include-dirs = [
+    "csrc/minicrypto",
+    "csrc/minicrypto/cipher"
+]
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"

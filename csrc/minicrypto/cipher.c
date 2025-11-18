@@ -1,7 +1,7 @@
 #include "minicrypto.h"
 #include "cipher.h"
-#include "_C/twofish.h"
-#include "_C/weakfish.h"
+#include "cipher/twofish.h"
+#include "cipher/weakfish.h"
 
 
 #define TWOFISH_MINKEYLEN   0

@@ -19,7 +19,7 @@ from pgmmvdec import decrypt_key, decrypt_resource_bytes, decrypt_resource_file
 # signature
 
 decrypt_key(encrypted_key: bytes) -> bytes
-decrypt_resource_bytes(file_bytes: bytes, key: bytes) -> bytes
+decrypt_resource_bytes(resource_bytes: bytes, padding_len: int, key: bytes) -> bytes
 decrypt_resource_file(file: str, out: str, key: bytes) -> int
 
 
@@ -31,11 +31,11 @@ with open('info.json', 'r', encoding='utf-8') as f:
 decrypted_key = decrypt_key(encrypted_key)
 
 
-# decrypt resource
+# decrypt resource (notice the metadata)
 
 with open('encrypted_resource_file', 'rb') as encf, open('decrypted_resource_file', 'wb') as decf:
     file_bytes = encf.read()
-    decrypted_bytes = decrypt_resource_bytes(file_bytes, decrypted_key)
+    decrypted_bytes = decrypt_resource_bytes(file_bytes[4:], file_bytes[3], decrypted_key)
     decf.write(decrypted_bytes)
 
 decrypt_resource_file('encrypted_resource_file', 'decrypted_resource_file', decrypted_key)

@@ -14,13 +14,10 @@ def decrypt_key(encrypted_key: bytes) -> bytes:
     return CBC(PGMMV_IV).decrypt(Weakfish(), encrypted_key)
 
 
-def decrypt_resource_bytes(file_bytes: bytes, key: bytes) -> bytes:
-    if file_bytes[:3] != b'enc':    # resource file is not encrypted
-        return file_bytes
-
-    pt_len = len(file_bytes) - 4 - file_bytes[3]
+def decrypt_resource_bytes(resource_bytes: bytes, padding_len: int, key: bytes) -> bytes:
+    pt_len = len(resource_bytes) - padding_len
     cipher = Weakfish() if _is_weak(key) else Twofish(derive_subkey(key, pt_len))
-    pt_iter = CBCDecIter(cipher, PGMMV_IV, make_iter(file_bytes[4:]))
+    pt_iter = CBCDecIter(cipher, PGMMV_IV, make_iter(resource_bytes))
 
     return (b''.join(pt_iter))[:pt_len]
 

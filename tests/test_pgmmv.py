@@ -32,9 +32,10 @@ def test_decrypt_key():
 
 def test_decrypt_resource_bytes():
     for sample in SAMPLES:
-        fbytes = decrypt_resource_bytes(Path(SAMPLE_ROOT / sample['name']).read_bytes(), KEY)
+        fbytes = Path(SAMPLE_ROOT / sample['name']).read_bytes()
+        dbytes = decrypt_resource_bytes(fbytes[4:], fbytes[3], KEY)
 
-        assert sha256(fbytes).hexdigest() == sample['sha256'],\
+        assert sha256(dbytes).hexdigest() == sample['sha256'],\
             f'decrypt_resource_bytes: Incorrect decrypted {sample["type"]}'
         print(f'decrypt_resource_bytes: Sample {sample["type"]} passed')
 
