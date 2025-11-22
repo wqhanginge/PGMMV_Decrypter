@@ -44,7 +44,7 @@ decrypt_resource_file('encrypted_resource_file', 'decrypted_resource_file', decr
 ## Command-Line Interface
 
 ```sh
-pgmmvdec [-o OUTPUT] [-q] [-k KEY | -x KEY] input
+pgmmvdec [-o OUTPUT] [-q] [-f] [-k KEY | -x KEY] input
 
 # decrypt one resource file with the key detected from directory
 pgmmvdec encrypted.png -o decrypted.png
