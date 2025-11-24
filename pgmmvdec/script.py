@@ -45,7 +45,8 @@ def decrypt_iter_path(src: Path, dst: Path, key: bytes, force: bool = False) -> 
     while tasks:
         srcp, dstp = tasks.popleft()
         if srcp.is_file():
-            if (not dstp.exists() or force or prompt(f'File: {dstp}\nalready exists, overwrite (y/N)? ')):
+            if (not dstp.exists() or force or prompt(f'File {dstp} already exists\nOverwrite(y/N)? ')):
+                print(f'  {srcp.name if srcp == src else srcp.relative_to(src)}')
                 decrypt_resource_file(srcp, dstp, key)
         else:
             dstp.mkdir(parents=True, exist_ok=True)
