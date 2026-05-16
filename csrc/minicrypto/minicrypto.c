@@ -51,7 +51,7 @@ static PyMethodDef Py_minicrypto_methods[] = {
 
 static PyModuleDef Py_minicrypto_module = {
     .m_base = PyModuleDef_HEAD_INIT,
-    .m_name = MODULENAME__MINICRYPTO,
+    .m_name = MODULENAME_MINICRYPTO,
     .m_doc = NULL,
     .m_size = -1,
     .m_methods = Py_minicrypto_methods,

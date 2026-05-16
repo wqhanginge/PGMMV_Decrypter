@@ -15,7 +15,7 @@ parser = ArgumentParser(description='Pixel Game Maker MV Decrypter')
 parser.add_argument('input', type=Path, help='PGMMV resource file or directory')
 parser.add_argument('-o', '--out', metavar='OUTPUT', type=Path, help='specify the output file or directory')
 parser.add_argument('-q', '--query', action='store_true', help='query the key and exit without decryption')
-parser.add_argument('-f', '--force', action='store_true', help='overwrite existing files without prompting')
+parser.add_argument('-f', '--force', action='store_true', help='overwrite existing files without prompt')
 exgroup = parser.add_mutually_exclusive_group()
 exgroup.add_argument('-k', '--key', metavar='KEY', help='specify the key in str type')
 exgroup.add_argument('-x', '--hex', metavar='KEY', help='specify the key in hex type')
@@ -34,8 +34,8 @@ def find_key(cwd: Path) -> bytes | None:
     return None
 
 
-def prompt(msg: str) -> bool:
-    return input(msg).strip().lower() == 'y'
+def prompt_overwrite(file: Path) -> bool:
+    return input(f'File {file} already exists\nOverwrite(y/N)? ').strip().lower() == 'y'
 
 
 def decrypt_iter_path(src: Path, dst: Path, key: bytes, force: bool = False) -> None:
@@ -45,7 +45,7 @@ def decrypt_iter_path(src: Path, dst: Path, key: bytes, force: bool = False) -> 
     while tasks:
         srcp, dstp = tasks.popleft()
         if srcp.is_file():
-            if (not dstp.exists() or force or prompt(f'File {dstp} already exists\nOverwrite(y/N)? ')):
+            if (not dstp.exists() or force or prompt_overwrite(dstp)):
                 print(f'  {srcp.name if srcp == src else srcp.relative_to(src)}')
                 decrypt_resource_file(srcp, dstp, key)
         else:
@@ -82,12 +82,13 @@ def main() -> None:
         ans = f'Resource key: {key.hex()} "{key.decode("utf-8", "backslashreplace")}"'\
             if key is not None else 'No Resource key found'
         print(ans)
-    elif key is None:
+        return
+
+    if key is None:
         raise RuntimeError('Cannot find the resource key')
-    else:
-        print(f'Decrypting resources to {args.out}')
-        decrypt_iter_path(args.input, args.out, key, args.force)
-        print('Done')
+    print(f'Decrypting resources to {args.out}')
+    decrypt_iter_path(args.input, args.out, key, args.force)
+    print('Done')
 
 
 if __name__ == '__main__':

@@ -60,4 +60,4 @@ pgmmvdec -q ./Resources/
 
 This work is based on [**pgmm_decrypt**](https://github.com/blluv/pgmm_decrypt) by **blluv**.
 
-**Twofish** source code from [debian packages](https://packages.debian.org/source/buster/twofish).
+**Twofish** source code can be found at debian packages [website](https://www.debian.org/distrib/packages).

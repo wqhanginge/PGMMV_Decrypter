@@ -73,7 +73,7 @@ static PyMethodDef PyCipherMode_methods[] = {
 
 PyTypeObject PyCipherModeType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CIPHERMODE),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_CIPHERMODE),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCipherModeObject),
     .tp_itemsize = 0,
@@ -161,7 +161,7 @@ static PyMethodDef PyCBC_methods[] = {
 
 PyTypeObject PyCBCType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CBC),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_CBC),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCBCObject),
     .tp_itemsize = 0,

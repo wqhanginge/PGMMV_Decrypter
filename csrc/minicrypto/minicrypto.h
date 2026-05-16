@@ -5,7 +5,7 @@
 
 
 #define PYNAME_CONCAT(m,c)          m "." c
-#define MODULENAME__MINICRYPTO      "_minicrypto"
+#define MODULENAME_MINICRYPTO       "_minicrypto"
 
 
 /* general functions */

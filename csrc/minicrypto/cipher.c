@@ -93,7 +93,7 @@ static PyMethodDef PyCipher_methods[] = {
 
 PyTypeObject PyCipherType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CIPHER),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_CIPHER),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCipherObject),
     .tp_itemsize = 0,
@@ -152,7 +152,7 @@ static PyMethodDef PyIdentity_methods[] = {
 
 PyTypeObject PyIdentityType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_IDENTITY),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_IDENTITY),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyIdentityObject),
     .tp_itemsize = 0,
@@ -237,7 +237,7 @@ static PyMethodDef PyTwofish_methods[] = {
 
 PyTypeObject PyTwofishType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_TWOFISH),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_TWOFISH),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyTwofishObject),
     .tp_itemsize = 0,
@@ -301,7 +301,7 @@ static PyMethodDef PyWeakfish_methods[] = {
 
 PyTypeObject PyWeakfishType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_WEAKFISH),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_WEAKFISH),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyWeakfishObject),
     .tp_itemsize = 0,

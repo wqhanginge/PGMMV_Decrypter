@@ -60,7 +60,7 @@ static PyObject* PyCipherIter_iternext(PyCipherIterObject* Py_UNUSED(self)) {
 
 PyTypeObject PyCipherIterType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CIPHERITER),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_CIPHERITER),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCipherIterObject),
     .tp_itemsize = 0,
@@ -162,7 +162,7 @@ static PyObject* PyCBCEncIter_new(PyTypeObject* type, PyObject* Py_UNUSED(args),
 
 PyTypeObject PyCBCEncIterType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CBCENCITER),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_CBCENCITER),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCBCEncIterObject),
     .tp_itemsize = 0,
@@ -185,7 +185,7 @@ static PyObject* PyCBCDecIter_new(PyTypeObject* type, PyObject* Py_UNUSED(args),
 
 PyTypeObject PyCBCDecIterType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = PYNAME_CONCAT(MODULENAME__MINICRYPTO, CLASSNAME_CBCDECITER),
+    .tp_name = PYNAME_CONCAT(MODULENAME_MINICRYPTO, CLASSNAME_CBCDECITER),
     .tp_doc = NULL,
     .tp_basicsize = sizeof(PyCBCDecIterObject),
     .tp_itemsize = 0,
