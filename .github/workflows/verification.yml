@@ -35,4 +35,5 @@ jobs:
 
       - name: Run command line script
         run: |
-          pgmmvdec -q tests/samples
+          pgmmvdec -e tests/samples/info.json
+          pgmmvdec tests/samples
