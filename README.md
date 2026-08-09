@@ -6,6 +6,10 @@ A fast version of tool [**pgmm_decrypt**](https://github.com/blluv/pgmm_decrypt)
 
 ## Install
 
+Grab the latest packaged release and install directly.
+
+If you prefer or need to compile from source, use pip with the GitHub repo:
+
 ```sh
 pip install git+https://github.com/wqhanginge/PGMMV_Decrypter.git
 ```
@@ -44,7 +48,7 @@ decrypt_resource_file('encrypted_resource_file', 'decrypted_resource_file', decr
 ## Command-Line Interface
 
 ```sh
-pgmmvdec [-o OUTPUT] [-q] [-f] [-k KEY | -x KEY] input
+pgmmvdec [-o OUTPUT] [-y] [-e | -k KEY | -x KEY] INPUT
 
 # decrypt one resource file with the key detected from directory
 pgmmvdec encrypted.png -o decrypted.png
@@ -52,8 +56,8 @@ pgmmvdec encrypted.png -o decrypted.png
 # decrypt resource directory with a custom key
 pgmmvdec -k "Resource Key" ./Resources/img/
 
-# retrieve the key without resource decryption
-pgmmvdec -q ./Resources/
+# retrieve the key from a specific file
+pgmmvdec -e ./sample.json
 ```
 
 ## Thanks
