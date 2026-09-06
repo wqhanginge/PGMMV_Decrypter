@@ -30,10 +30,10 @@ jobs:
       - name: Run test scripts
         run: |
           python tests/test_cbc.py
+          python tests/test_utils.py
           python tests/test_decrypt.py
-          python tests/test_pgmmv.py
 
       - name: Run command line script
         run: |
-          pgmmvdec -e tests/samples/info.json
-          pgmmvdec tests/samples
+          pgmdec -e tests/samples/info.json
+          pgmdec tests/samples

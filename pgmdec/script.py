@@ -10,8 +10,8 @@ PGMMV_KEY_DICTKEY = 'key'
 DECRYPTED_SUFFIX = '_dec'
 
 
-parser = ArgumentParser(description='Pixel Game Maker MV Decrypter')
-parser.add_argument('input', metavar='INPUT', type=Path, help='PGMMV resource file or directory')
+parser = ArgumentParser(prog='pgmdec', description='Pixel Game Maker MV Decrypter')
+parser.add_argument('input', metavar='INPUT', type=Path, help='resource file or directory')
 parser.add_argument('-o', '--out', metavar='OUTPUT', type=Path, help='specify the output file or directory')
 parser.add_argument('-y', '--force', action='store_true', help='overwrite existing files without prompt')
 exgroup = parser.add_mutually_exclusive_group()
@@ -49,19 +49,29 @@ def search_keyfile(root: Path) -> Path:
     return fp
 
 
-def prompt_overwrite(file: Path) -> bool:
-    return input(f'File {file} already exists\nOverwrite(y/N)? ').strip().lower() == 'y'
+def prompt_overwrite(): # -> Callable[[str], bool]
+    prompt_str = 'File already exists: {fp}\nOverwrite? (y/a/N) '
+    skip = False
+
+    def prompt(file: str) -> bool:
+        nonlocal skip
+        opt = 'a' if skip else input(prompt_str.format(fp=file)).strip().lower()
+        skip = opt == 'a'
+        return skip or opt == 'y'
+
+    return prompt
 
 
 def decrypt_iter_path(src: Path, dst: Path, key: bytes, force: bool = False) -> None:
     from collections import deque
 
+    prompt = prompt_overwrite()
     tasks = deque([(src, dst)])
     while tasks:
         srcp, dstp = tasks.popleft()
         if srcp.is_file():
-            if (not dstp.exists() or force or prompt_overwrite(dstp)):
-                print(f'  {srcp.name if srcp == src else srcp.relative_to(src)}')
+            if (not dstp.exists() or force or prompt(dstp.name)):
+                print(f'  {srcp.name}')
                 decrypt_resource_file(srcp, dstp, key)  # type: ignore
         else:
             dstp.mkdir(parents=True, exist_ok=True)

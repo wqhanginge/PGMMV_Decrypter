@@ -1,7 +1,7 @@
 from hashlib import sha256
 from secrets import token_bytes
 
-from pgmmvdec._minicrypto import CBC, CBCDecIter, CBCEncIter, Identity
+from pgmdec._minicrypto import CBC, CBCDecIter, CBCEncIter, Identity
 
 BLOCK_COUNT = 16
 BLOCK_SIZE = 16

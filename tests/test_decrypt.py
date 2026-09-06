@@ -1,33 +1,60 @@
-from pgmmvdec.decrypt import derive_subkey, xor_bytes
+from hashlib import sha256
+from pathlib import Path
 
+from pgmdec.decrypt import decrypt_key, decrypt_resource_bytes, decrypt_resource_file
+
+KEY = b'PGMMV TEST KEY\0\0'
+SAMPLE_ROOT = Path(__file__).parent / 'samples'
 SAMPLES = (
     {
-        'key': bytes.fromhex('0123456789ABCDEFFEDCBA9876543210'),
-        'int': 1,
-        'sub': bytes.fromhex('0123456789ABCDEFFEDCBA9876543210'),
+        'type': 'string',
+        'name': 'string.txt',
+        'sha256': '9cd620fef71c14851f76e0862234e8e4f5a8fc6c344572bcd2407482e5ce07b8',
     },
     {
-        'key': bytes.fromhex('0F1E2D3C4B5A69788796A5B4C3D2E1F0'),
-        'int': 2147483647,
-        'sub': bytes.fromhex('F0E1D2434B5A69788796A5B4C3D2E1F0'),
+        'type': 'image',
+        'name': 'image.png',
+        'sha256': '406ae51c00e06048cfb465af44020c0cba18e351fa937d13c0bfd9dd56c64aa6',
     },
 )
 
 
-def test_xor_bytes():
-    for sample in SAMPLES:
-        assert xor_bytes(sample['key'], sample['key']).strip(b'\0') == b'',\
-            f'xor_bytes: Incorrect output of "{sample["key"].hex()}"'
-        print(f'xor_bytes: Sample "{sample["key"].hex()}" passed')
+def test_decrypt_key():
+    from base64 import b64decode
+    from json import loads
+
+    raw_key = loads(Path(SAMPLE_ROOT / 'info.json').read_bytes())['key']
+    key = decrypt_key(b64decode(raw_key))
+
+    assert key == KEY, 'decrypt_key: Incorrect decrypted key'
+    print('decrypt_key: Passed')
 
 
-def test_derive_subkey():
+def test_decrypt_resource_bytes():
     for sample in SAMPLES:
-        assert derive_subkey(sample['key'], sample['int']) == sample['sub'],\
-            f'derive_subkey: Incorrect subkey of "{sample["key"].hex()}"'
-        print(f'derive_subkey: Sample "{sample["key"].hex()}" passed')
+        fbytes = Path(SAMPLE_ROOT / sample['name']).read_bytes()
+        dbytes = decrypt_resource_bytes(fbytes[4:], fbytes[3], KEY)
+
+        assert sha256(dbytes).hexdigest() == sample['sha256'],\
+            f'decrypt_resource_bytes: Incorrect decrypted {sample["type"]}'
+        print(f'decrypt_resource_bytes: Sample {sample["type"]} passed')
+
+
+def test_decrypt_resource_file():
+    from os import remove
+    TMP = 'decrypted.tmp'
+
+    for sample in SAMPLES:
+        decrypt_resource_file(SAMPLE_ROOT / sample['name'], SAMPLE_ROOT / TMP, KEY) # type: ignore
+
+        assert sha256(Path(SAMPLE_ROOT / TMP).read_bytes()).hexdigest() == sample['sha256'],\
+            f'decrypt_resource_file: Incorrect decrypted {sample["type"]}'
+        print(f'decrypt_resource_file: Sample {sample["type"]} passed')
+
+    remove(SAMPLE_ROOT / TMP)
 
 
 if __name__ == '__main__':
-    test_xor_bytes()
-    test_derive_subkey()
+    test_decrypt_key()
+    test_decrypt_resource_bytes()
+    test_decrypt_resource_file()

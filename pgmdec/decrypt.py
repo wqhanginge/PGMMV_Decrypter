@@ -1,5 +1,5 @@
 from ._minicrypto import CBC, CBCDecIter, Twofish, Weakfish
-from .decrypt import derive_subkey, make_iter
+from .utils import derive_subkey, make_iter
 
 PGMMV_IV = bytes.fromhex("A047E93D230A4C62A744B1A4EE857FBA")
 

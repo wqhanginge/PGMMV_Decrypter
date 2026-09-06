@@ -16,7 +16,7 @@ def xor_bytes(bytes1: bytes, bytes2: bytes, *, strict: bool = False) -> bytes:
 # Block ciphers
 
 class Cipher():
-    '''Abstract base class for a block cipher.'''
+    '''Abstract base block cipher.'''
 
     def encrypt(self, block: bytes) -> bytes:
         '''Encrypt a 16-byte block of plaintext.'''
@@ -53,7 +53,7 @@ class Weakfish(Cipher):
 # Iterates one block at a time until the input is exhausted
 
 class CipherIter():
-    '''Abstract base iterator for a block cipher mode.'''
+    '''Abstract base block cipher mode iterator.'''
 
     def __iter__(self) -> Self: ...
     def __next__(self) -> bytes: ...
@@ -61,14 +61,14 @@ class CipherIter():
 class CBCEncIter(CipherIter):
     '''Cipher Block Chaining iterator with a 16-byte IV.'''
 
-    def __init__(self, cipher: Cipher, iv: bytes, input_iterable: Iterable[bytes]) -> None: ...
+    def __init__(self, cipher: Cipher, iv: bytes, input: Iterable[bytes]) -> None: ...
     def __iter__(self) -> Self: ...
     def __next__(self) -> bytes: ...
 
 class CBCDecIter(CipherIter):
     '''Cipher Block Chaining iterator with a 16-byte IV.'''
 
-    def __init__(self, cipher: Cipher, iv: bytes, input_iterable: Iterable[bytes]) -> None: ...
+    def __init__(self, cipher: Cipher, iv: bytes, input: Iterable[bytes]) -> None: ...
     def __iter__(self) -> Self: ...
     def __next__(self) -> bytes: ...
 
@@ -77,7 +77,7 @@ class CBCDecIter(CipherIter):
 # Stores the state of the block cipher mode and processes the entire data at once
 
 class CipherMode():
-    '''Abstract base class for a block cipher mode.'''
+    '''Abstract base block cipher mode.'''
 
     def encrypt(self, cipher: Cipher, data: bytes) -> bytes: ...
     def decrypt(self, cipher: Cipher, data: bytes) -> bytes: ...

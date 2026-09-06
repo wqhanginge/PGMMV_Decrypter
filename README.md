@@ -17,7 +17,7 @@ pip install git+https://github.com/wqhanginge/PGMMV_Decrypter.git
 ## Usage
 
 ```py
-from pgmmvdec import decrypt_key, decrypt_resource_bytes, decrypt_resource_file
+from pgmdec import decrypt_key, decrypt_resource_bytes, decrypt_resource_file
 
 
 # signature
@@ -48,16 +48,16 @@ decrypt_resource_file('encrypted_resource_file', 'decrypted_resource_file', decr
 ## Command-Line Interface
 
 ```sh
-pgmmvdec [-o OUTPUT] [-y] [-e | -k KEY | -x KEY] INPUT
+pgmdec [-o OUTPUT] [-y] [-e | -k KEY | -x KEY] INPUT
 
 # decrypt one resource file with the key detected from directory
-pgmmvdec encrypted.png -o decrypted.png
+pgmdec encrypted.png -o decrypted.png
 
 # decrypt resource directory with a custom key
-pgmmvdec -k "Resource Key" ./Resources/img/
+pgmdec -k "Resource Key" ./Resources/img/
 
 # retrieve the key from a specific file
-pgmmvdec -e ./sample.json
+pgmdec -e ./sample.json
 ```
 
 ## Thanks

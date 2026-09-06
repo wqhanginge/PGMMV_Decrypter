@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pgmmvdec"
+name = "pgmdec"
 authors = [{name = "Gee Wang"}, {name = "blluv"}]
 description = "Pixel Game Maker MV Decrypter"
 license = "MIT"
@@ -11,13 +11,13 @@ requires-python = ">=3.10"
 dynamic = ["version"]
 
 [project.scripts]
-pgmmvdec = "pgmmvdec.script:main"
+pgmdec = "pgmdec.script:main"
 
 [tool.setuptools]
-packages = ["pgmmvdec"]
+packages = ["pgmdec"]
 
 [[tool.setuptools.ext-modules]]
-name = "pgmmvdec._minicrypto"
+name = "pgmdec._minicrypto"
 sources = [
     "csrc/minicrypto/minicrypto.c",
     "csrc/minicrypto/cipher.c",

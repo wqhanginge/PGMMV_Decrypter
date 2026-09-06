@@ -114,12 +114,12 @@ static void _PyCBCIter_dealloc(_PyCBCIterObject* self) {
 }
 
 static int _PyCBCIter_init(_PyCBCIterObject* self, PyObject* args, PyObject* kwds) {
-    static char* kwlist[] = { "cipher", "iv", "input_iterable", NULL };
+    static char* kwlist[] = { "cipher", "iv", "input", NULL };
 
     uint8_t* iv;
     Py_ssize_t ilen;
-    PyObject* cipher, * input_iterable;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!y#O", kwlist, &PyCipherType, &cipher, &iv, &ilen, &input_iterable)) {
+    PyObject* cipher, * input;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!y#O", kwlist, &PyCipherType, &cipher, &iv, &ilen, &input)) {
         return -1;
     }
     if (ilen != CIPHER_BLOCKSIZE) {
@@ -127,7 +127,7 @@ static int _PyCBCIter_init(_PyCBCIterObject* self, PyObject* args, PyObject* kwd
         return -1;
     }
 
-    PyObject* input_iter = PyObject_GetIter(input_iterable);
+    PyObject* input_iter = PyObject_GetIter(input);
     if (!input_iter) {
         return -1;
     }
